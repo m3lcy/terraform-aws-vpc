@@ -23,3 +23,27 @@ variable "az_count" {
     error_message = "az_count must be between 2 and 6"
   }
 }
+
+variable "common_tags" {
+  description = "Tags applied to all resources"
+  type = map(string)
+  default = {}
+}
+
+variable "vpc_tags" {
+  description = "Aditional tags to apply to the VPC"
+  type = map(string)
+  default = {}
+}
+
+variable "public_subnet_tags" {
+  description = "Additional tags applied only to public subnets"
+  type = map(string)
+  default = {}
+}
+
+variable "private_subnet_tags" {
+  description = "Additional tags applied only to private subnets"
+  type = map(string)
+  default = {}
+}
