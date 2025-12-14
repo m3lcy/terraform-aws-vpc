@@ -47,3 +47,9 @@ variable "private_subnet_tags" {
   type = map(string)
   default = {}
 }
+
+variable "enable_nat_gateway" {
+  description = "Create NAT gateways (set false to save cost)"
+  type = bool
+  default = true
+}
