@@ -3,7 +3,7 @@ variable "vpc_cidr" {
   type        = string
 
   validation {
-    condition = can(cidrnetmask(var.vpc_cidr))
+    condition     = can(cidrnetmask(var.vpc_cidr))
     error_message = "vpc_cidr must be a valid CIDR block"
   }
 }
@@ -26,30 +26,30 @@ variable "az_count" {
 
 variable "common_tags" {
   description = "Tags applied to all resources"
-  type = map(string)
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "vpc_tags" {
   description = "Aditional tags to apply to the VPC"
-  type = map(string)
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "public_subnet_tags" {
   description = "Additional tags applied only to public subnets"
-  type = map(string)
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "private_subnet_tags" {
   description = "Additional tags applied only to private subnets"
-  type = map(string)
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "enable_nat_gateway" {
   description = "Create NAT gateways (set false to save cost)"
-  type = bool
-  default = true
+  type        = bool
+  default     = true
 }
