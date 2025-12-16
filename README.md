@@ -20,7 +20,7 @@ Ideal for EKS, ECS, RDS or any application needing isolated public/private tiers
 VPC:
 ```hcl
 module "vpc" {
-  source = "../../src"
+  source = "../src"
 
   vpc_cidr    = "10.0.0.0/16"
   name_prefix = "tfexample_dev"
