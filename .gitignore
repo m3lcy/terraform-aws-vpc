@@ -2,8 +2,8 @@
 .terraform.lock.hcl
 *.tfstate*
 *.tfvars
-sandbox/
 tmp/
 .env*
 .envrc
 backend.tf
+dev/
