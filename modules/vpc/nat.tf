@@ -2,8 +2,12 @@ locals {
   public_subnets = {
     for k, s in aws_subnet.enterprise_subnets : k => s if s.map_public_ip_on_launch
   }
+
+  public_subnet_azs = distinct([for s in local.public_subnets : s.availability_zone])
+
   public_subnet_by_az = {
-    for az, id in { for s in local.public_subnets : s.availability_zone => s.id } : az => id
+    for az in local.public_subnet_azs :
+    az => element([for s in local.public_subnets : s.id if s.availability_zone == az], 0)
   }
 }
 
