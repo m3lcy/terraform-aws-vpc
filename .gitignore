@@ -6,4 +6,3 @@ tmp/
 .env*
 .envrc
 backend.tf
-dev/
