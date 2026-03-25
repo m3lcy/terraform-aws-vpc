@@ -7,6 +7,16 @@ variable "vpc_cidr" {
   }
 }
 
+variable "environment" {
+  description = "Target environment (prod/staging/dev)"
+  type        = string
+
+  validation {
+    condition     = contains(["prod", "staging", "dev"], var.environment)
+    error_message = "Environment must be prod, staging, or dev."
+  }
+}
+
 variable "subnet_config" {
   description = "Map of subnet configurations (VLAN mapping)"
   type = map(object({
@@ -24,7 +34,7 @@ variable "name_prefix" {
 variable "management_ssh_cidrs" {
   description = "CIDR blocks allowed to SSH into the management security group. Use [] to disable SSH access."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 }
 
 variable "enable_nat_gateway" {
