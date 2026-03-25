@@ -1,0 +1,58 @@
+name: Terraform CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  fmt:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: .
+
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    needs: fmt
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate Module
+        run: |
+          terraform init -backend=false
+          terraform validate
+        working-directory: modules/vpc
+
+  tflint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup tflint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Init tflint (download AWS ruleset)
+        run: tflint --init
+        working-directory: modules/vpc
+
+      - name: Run tflint on module
+        run: tflint --format compact
+        working-directory: modules/vpc
