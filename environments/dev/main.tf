@@ -1,6 +1,7 @@
 module "vpc" {
   source = "../../modules/vpc"
 
+  environment = var.environment
   vpc_cidr    = var.vpc_cidr
   name_prefix = var.name_prefix
 
