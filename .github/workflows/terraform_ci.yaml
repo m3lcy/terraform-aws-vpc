@@ -57,9 +57,9 @@ jobs:
         working-directory: modules/vpc
 
       - name: Init tflint
-        run: tflint --init
+        run: tflint --init --config ../../.tflint.hcl
         working-directory: modules/vpc
 
       - name: Run tflint
-        run: tflint --format compact
+        run: tflint --format compact --config ../../.tflint.hcl
         working-directory: modules/vpc

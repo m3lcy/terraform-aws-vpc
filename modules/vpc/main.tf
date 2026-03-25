@@ -4,7 +4,7 @@ resource "aws_vpc" "this" {
   enable_dns_support   = true
 
   tags = {
-    Name = "${var.name_prefix}-vpc"
+    Name = "${var.environment}-${var.name_prefix}-vpc"
   }
 }
 
@@ -12,7 +12,8 @@ resource "aws_internet_gateway" "this" {
   vpc_id = aws_vpc.this.id
 
   tags = {
-    Name = "${var.name_prefix}-igw"
+    Name        = "${var.name_prefix}-igw"
+    Environment = var.environment
   }
 }
 
