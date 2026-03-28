@@ -18,16 +18,138 @@ Coming soon:
 ## Architecture
 
 ### **Overview**
-![Overview](images/VPC%20Terraform%20Module%20Overview.svg)
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+  subgraph Repo ["Project Repository"]
+    direction TB
+    A[terraform-aws-vpc]
+    A --> B[modules/vpc]
+    A --> C[environments/dev]
+    A --> D[environments/prod]
+  end
+
+  subgraph VPC_Module ["VPC Module (modules/vpc)"]
+    direction TB
+    M1[VPC]
+    M2[Subnets]
+    M3[Route Tables - public/private]
+    M4[Security Groups - mgmt/internal/guest/compute]
+    M5[NAT Gateways]
+    M1 --> M2
+    M2 --> M3
+    M2 --> M4
+    M3 --> M5
+  end
+
+  subgraph Dev_Env ["Dev Environment"]
+    direction TB
+    E1[main.tf -> module.vpc]
+    E2[terraform.tfvars - Local Vars]
+    E3[terraform.tfstate - Local State]
+    E1 -->|uses| M1
+    E1 --> E2
+    E1 --> E3
+  end
+
+  subgraph Prod_Env ["Prod Environment"]
+    direction TB
+    P1[main.tf -> module.vpc]
+    P2[terraform.tfvars - Prod Vars]
+    P3[backend.tf - Backend Config]
+    P4[S3 State Bucket]
+    P5[DynamoDB Lock Table]
+    
+    P1 -->|uses| M1
+    P1 --> P2
+    P1 --> P3
+    P3 -->|manages| P4
+    P4 --> P5
+  end  
+  M4 -.->|exports| O[Subnet IDs / SG IDs / RT IDs]
+  E1 -.-> O
+  P1 -.-> O
+```
 
 ### **VPC Module**
-![VPC Module](images/VPC%20Terraform%20Architecture%20-%20VPC%20Module.svg)
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+ subgraph VPC_Module["VPC Module (modules/vpc)"]
+    direction TB
+        M1["VPC"]
+        M2["Subnets"]
+        M3["Route Tables - public/private"]
+        M4["Security Groups - mgmt/internal/guest/compute"]
+        M5["NAT Gateways"]
+  end
+    n1["Prod"] -- uses --> M1
+    n2["Dev"] -- uses --> M1
+    M1 --> M2
+    M2 --> M3 & M4
+    M3 --> M5
+    M4 L_M4_O_0@-- exports --> O["Subnet IDs / SG IDs / RT IDs"]
+
+    n1@{ shape: rect}
+    n2@{ shape: rect}
+
+    L_M4_O_0@{ animation: fast }
+```
 
 ### **Prod Environment**
-![Prod Environment](images/VPC%20Terraform%20Architecture%20-%20Prod%20Environment.svg)
+```mermaid
+---
+config:
+  layout: fixed
+---
+flowchart TB
+ subgraph Prod_Env["Prod Environment"]
+    direction TB
+        P1["main.tf -> module.vpc"]
+        P2["terraform.tfvars - Prod Vars"]
+        P3["backend.tf - Backend Config"]
+        P4["S3 State Bucket"]
+        P5["DynamoDB Lock Table"]
+  end
+    P1 --> P3 & P2
+    P4 --> P5
+    P1 L_P1_O_0@-.-> O["Subnet IDs / SG IDs / RT IDs"]
+    P1 -- uses --> n1["VPC Module"]
+    P3 -- manages --> P4
+
+    n1@{ shape: rect}
+
+    L_P1_O_0@{ animation: fast }
+```
 
 ### **Dev Environment**
-![Dev Environment](images/VPC%20Terraform%20Architecture%20-%20Dev%20Environment.svg)
+```mermaid
+---
+config:
+  layout: fixed
+---
+flowchart TB
+ subgraph Dev_Env["Dev Environment"]
+    direction TB
+        E1["main.tf -> module.vpc"]
+        E2["terraform.tfvars - Local Vars"]
+        E3["terraform.tfstate - Local State"]
+  end
+    E1 --> E2
+    E1 L_E1_n1_0@-. exports .-> n1["Subnet IDs / SG IDs / RT IDs"]
+    E1 -- uses --> O["VPC Module"]
+    E1 --> E3
+
+    n1@{ shape: rect}
+
+    L_E1_n1_0@{ animation: fast }
+```
 
 ---
 
