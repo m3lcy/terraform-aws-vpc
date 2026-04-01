@@ -52,3 +52,13 @@ output "subnet_ids_by_key" {
   description = "Map of subnet IDs keyed by subnet name"
   value       = { for k, s in aws_subnet.enterprise_subnets : k => s.id }
 }
+
+output "flow_log_bucket_arn" {
+  description = "ARN of the S3 bucket receiving VPC flow logs"
+  value       = var.enable_flow_logs ? aws_s3_bucket.flow_logs[0].arn : null
+}
+
+output "flow_log_id" {
+  description = "ID of the VPC Flow Log"
+  value       = var.enable_flow_logs ? aws_flow_log.this[0].id : null
+}
