@@ -42,3 +42,15 @@ variable "management_ssh_cidrs" {
   type        = list(string)
   default     = []
 }
+
+variable "enable_flow_logs" {
+  description = "Enable VPC Flow Logs to S3"
+  type        = bool
+  default     = true
+}
+
+variable "flow_log_traffic_type" {
+  description = "Capure all traffic: accept/reject"
+  type        = string
+  default     = "ALL"
+}
