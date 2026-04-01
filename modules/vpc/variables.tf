@@ -42,3 +42,20 @@ variable "enable_nat_gateway" {
   type        = bool
   default     = false
 }
+
+variable "enable_flow_logs" {
+  description = "Enable VPC Flow Logs to S3"
+  type        = bool
+  default     = false
+}
+
+variable "flow_log_traffic_type" {
+  description = "Type of traffic to capture: ACCEPT, REJECT, or ALL"
+  type        = string
+  default     = "ALL"
+
+  validation {
+    condition     = contains(["ACCEPT", "REJECT", "ALL"], var.flow_log_traffic_type)
+    error_message = "flow_log_traffic_type must be ACCEPT, REJECT, or ALL."
+  }
+}
