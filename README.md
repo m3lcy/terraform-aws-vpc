@@ -7,7 +7,8 @@ A minimal, reusable Terraform module for creating an AWS VPC architecture with:
 - route tables + gateways (IGW)
 - Elastic IPs
 - optional per-AZ NAT gateways
-- outputs for subnet IDs, route tables, SGs, and NAT resources
+- outputs for all resources
+- Flow logs (S3)
 
 Coming soon:
 
@@ -32,18 +33,22 @@ flowchart TB
     A --> D[environments/prod]
   end
 
-  subgraph VPC_Module ["VPC Module (modules/vpc)"]
+subgraph VPC_Module ["VPC Module (modules/vpc)"]
     direction TB
     M1[VPC]
     M2[Subnets]
     M3[Route Tables - public/private]
     M4[Security Groups - mgmt/internal/guest/compute]
     M5[NAT Gateways]
+    M6[Flow Logs]
+    M7[(S3 Bucket)]
     M1 --> M2
     M2 --> M3
     M2 --> M4
     M3 --> M5
-  end
+    M1 -->|captures traffic| M6
+    M6 -->|ships to| M7
+end
 
   subgraph Dev_Env ["Dev Environment"]
     direction TB
@@ -88,12 +93,16 @@ flowchart TB
         M3["Route Tables - public/private"]
         M4["Security Groups - mgmt/internal/guest/compute"]
         M5["NAT Gateways"]
+        M6["Flow Logs"]
+        M7[("S3 Bucket")]
   end
-    n1["Prod"] -- uses --> M1
-    n2["Dev"] -- uses --> M1
     M1 --> M2
     M2 --> M3 & M4
     M3 --> M5
+    M1 -- captures traffic --> M6
+    M6 -- ships to --> M7
+    n1["Prod"] -- uses --> M1
+    n2["Dev"] -- uses --> M1
     M4 L_M4_O_0@-- exports --> O["Subnet IDs / SG IDs / RT IDs"]
 
     n1@{ shape: rect}
@@ -255,3 +264,4 @@ This module exposes useful outputs for downstream modules:
 - `private_route_table_ids` (one per private subnet)
 - `security_group_ids` (mgmt/compute/internal/guest)
 - `nat_gateway_ids` / `nat_eip_ids` (one per AZ, when enabled)
+- `flow_log_bucket_arn` / `flow_log_id`
