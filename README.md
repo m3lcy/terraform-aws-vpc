@@ -179,10 +179,53 @@ To run in prod:
 ```bash
 cd environments/prod
 terraform init
-# terraform plan
+terraform plan
+# terraform apply
 ```
 
 NAT Gateway is disabled by default to avoid AWS charges, set `enable_nat_gateway = true` in `main.tf`
+
+---
+
+## Usage
+
+```hcl
+module "vpc" {
+  source = "git::https://github.com/m3lcy/terraform-aws-vpc.git//modules/vpc?ref=main" 
+
+  name_prefix = "tf_example"
+  environment = "dev"
+  vpc_cidr    = "10.0.0.0/16"
+
+  enable_nat_gateway = true          
+
+  management_ssh_cidrs = []   
+
+
+  subnet_config = {
+    # Management tier (private) - bastion, monitoring, admin tools
+    mgmt-1a = { cidr_block = "10.0.0.0/24", az = "us-east-1a", is_public = false }
+    mgmt-1b = { cidr_block = "10.0.1.0/24", az = "us-east-1b", is_public = false }
+    mgmt-1c = { cidr_block = "10.0.2.0/24", az = "us-east-1c", is_public = false }
+
+    # Internal tier (private) - application servers, databases, backend services
+    internal-1a = { cidr_block = "10.0.3.0/24", az = "us-east-1a", is_public = false }
+    internal-1b = { cidr_block = "10.0.4.0/24", az = "us-east-1b", is_public = false }
+    internal-1c = { cidr_block = "10.0.5.0/24", az = "us-east-1c", is_public = false }
+
+    # Guest / Public tier - load balancers, public services
+    guest-1a = { cidr_block = "10.0.6.0/24", az = "us-east-1a", is_public = true }
+    guest-1b = { cidr_block = "10.0.7.0/24", az = "us-east-1b", is_public = true }
+    guest-1c = { cidr_block = "10.0.8.0/24", az = "us-east-1c", is_public = true }
+  }
+
+  tags = {
+    Environment = "dev"
+    ManagedBy   = "terraform"
+    Project     = "terraform-aws-vpc_development"
+  }
+}
+```
 
 ---
 
@@ -197,4 +240,4 @@ This module exposes useful outputs for downstream modules:
 - `private_route_table_ids` (one per private subnet)
 - `security_group_ids` (mgmt/compute/internal/guest)
 - `nat_gateway_ids` / `nat_eip_ids` (one per AZ, when enabled)
-- `flow_log_bucket_arn` / `flow_log_id`
+- `flow_log_bucket_arn`, `flow_log_id`
