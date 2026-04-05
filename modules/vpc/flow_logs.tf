@@ -14,6 +14,7 @@ resource "aws_flow_log" "this" {
 resource "aws_s3_bucket" "flow_logs" {
   count  = var.enable_flow_logs ? 1 : 0
   bucket = "${var.name_prefix}-${var.environment}-vpc-flow-logs-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
 
   tags = {
     Name        = "${var.name_prefix}-${var.environment}-vpc-flow-logs-${data.aws_caller_identity.current.account_id}"
