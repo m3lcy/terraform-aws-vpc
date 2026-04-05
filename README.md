@@ -179,77 +179,10 @@ To run in prod:
 ```bash
 cd environments/prod
 terraform init
-terraform plan 
-# terraform apply
+# terraform plan
 ```
 
 NAT Gateway is disabled by default to avoid AWS charges, set `enable_nat_gateway = true` in `main.tf`
-
-`terraform.tfvars` usage:
-```hcl
-management_ssh_cidrs = ["YOUR_PUBLIC_IP/32"]
-
-environment = "prod"
-vpc_cidr    = "10.0.0.0/16"
-name_prefix = "enterprise"
-
-subnet_config = {
-  mgmt-1a = {
-    cidr_block = "10.0.0.0/24"
-    az         = "us-east-1a"
-    is_public  = false
-  }
-
-  mgmt-1b = {
-    cidr_block = "10.0.1.0/24"
-    az         = "us-east-1b"
-    is_public  = false
-  }
-
-  mgmt-1c = {
-    cidr_block = "10.0.2.0/24"
-    az         = "us-east-1c"
-    is_public  = false
-  }
-
-  internal-1a = {
-    cidr_block = "10.0.3.0/24"
-    az         = "us-east-1a"
-    is_public  = false
-  }
-
-  internal-1b = {
-    cidr_block = "10.0.4.0/24"
-    az         = "us-east-1b"
-    is_public  = false
-  }
-
-  internal-1c = {
-    cidr_block = "10.0.5.0/24"
-    az         = "us-east-1c"
-    is_public  = false
-  }
-
-  guest-1a = {
-    cidr_block = "10.0.6.0/24"
-    az         = "us-east-1a"
-    is_public  = true
-  }
-
-  guest-1b = {
-    cidr_block = "10.0.7.0/24"
-    az         = "us-east-1b"
-    is_public  = true
-  }
-
-  guest-1c = {
-    cidr_block = "10.0.8.0/24"
-    az         = "us-east-1c"
-    is_public  = true
-  }
-
-}
-```
 
 ---
 
