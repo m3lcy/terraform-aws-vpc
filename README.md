@@ -12,7 +12,8 @@ A minimal, reusable Terraform module for creating an AWS VPC architecture with:
 
 Coming soon:
 
-- Flow logs (CloudWatch/S3)
+- TGW
+- VPC Attachments
 
 ---
 
