@@ -1,3 +1,9 @@
+variable "aws_region" {
+  description = "AWS region to deploy resources"
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "environment" {
   description = "Target environment (prod/staging/dev)"
   type        = string
@@ -37,4 +43,13 @@ variable "route_table_propagations" {
   description = "Map of attachment key to list of route table keys to propagate into"
   type        = map(list(string))
   default     = {}
+}
+
+variable "tgw_routes" {
+  description = "List of TGW routes to add to private route tables"
+  type = list(object({
+    destination_cidr = string
+    tgw_id           = string
+  }))
+  default = []
 }
