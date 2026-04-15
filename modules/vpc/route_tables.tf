@@ -23,8 +23,17 @@ resource "aws_route_table" "private" {
     }
   }
 
+  dynamic "route" {
+    for_each = var.tgw_routes
+    content {
+      cidr_block         = route.value.destination_cidr
+      transit_gateway_id = route.value.tgw_id
+    }
+  }
+
   tags = {
-    Name = "${var.name_prefix}-private-rt-${each.key}"
+    Name        = "${var.name_prefix}-private-rt-${each.key}"
+    Environment = var.environment
   }
 }
 
