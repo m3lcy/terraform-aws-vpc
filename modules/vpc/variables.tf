@@ -59,3 +59,12 @@ variable "flow_log_traffic_type" {
     error_message = "flow_log_traffic_type must be ACCEPT, REJECT, or ALL."
   }
 }
+
+variable "tgw_routes" {
+  description = "List of TGW routes to add to private route tables"
+  type = list(object({
+    destination_cidr = string
+    tgw_id           = string
+  }))
+  default = []
+}
