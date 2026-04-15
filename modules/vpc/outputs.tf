@@ -3,6 +3,11 @@ output "vpc_id" {
   value       = aws_vpc.this.id
 }
 
+output "vpc_cidr" {
+  description = "The CIDR block of the VPC"
+  value       = aws_vpc.this.cidr_block
+}
+
 output "subnet_ids" {
   description = "All subnet IDs created in the VPC"
   value       = [for s in aws_subnet.enterprise_subnets : s.id]
