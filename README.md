@@ -150,15 +150,13 @@ flowchart TB
     n1["Shared-svc Environment"] -- uses --> M1
     n2["Prod Environment"] -- uses --> M1
     n3["Dev Environment"] -- uses --> M1
-    VPC_Module L_VPC_Module_n5_0@-. exports .-> n5["vpc_id / subnet_ids / sg_ids / rt_ids / vpc_cidr"]
+    VPC_Module -. exports .-> n5["vpc_id / subnet_ids / sg_ids / rt_ids / vpc_cidr"]
 
     n4@{ shape: rect}
     n1@{ shape: rect}
     n2@{ shape: rect}
     n3@{ shape: rect}
     n5@{ shape: rect}
-
-    L_VPC_Module_n5_0@{ animation: fast }
 ```
 
 ### **TGW Module**
