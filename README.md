@@ -192,7 +192,7 @@ flowchart TB
     n4@{ shape: rect}
 
     L_TGW_Module_n5_0@{ animation: fast }
-``
+```
 
 ### **Dev Environment**
 ```mermaid
