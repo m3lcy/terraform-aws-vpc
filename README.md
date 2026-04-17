@@ -129,7 +129,7 @@ flowchart TB
 ```mermaid
 ---
 config:
-  layout: fixed
+  layout: elk
 ---
 flowchart TB
  subgraph VPC_Module["VPC Module (modules/vpc)"]
@@ -140,18 +140,25 @@ flowchart TB
         M4["Security Groups - mgmt/internal/guest/compute"]
         M5["NAT Gateways"]
         M6["Flow Logs"]
+        M7[("S3 Bucket")]
   end
     M1 --> M2
     M2 --> M3 & M4
     M3 --> M5 & n4["TGW Module"]
     M1 -- captures traffic --> M6
+    M6 -- ships to --> M7
     n1["Shared-svc Environment"] -- uses --> M1
     n2["Prod Environment"] -- uses --> M1
     n3["Dev Environment"] -- uses --> M1
-    VPC_Module -. exports .-> n5["vpc_id / subnet_ids / sg_ids / rt_ids / vpc_cidr"]
-    M6 -- ships to --> n6["S3 Bucket"]
+    VPC_Module L_VPC_Module_n5_0@-. exports .-> n5["vpc_id / subnet_ids / sg_ids / rt_ids / vpc_cidr"]
 
-    n6@{ shape: cyl}
+    n4@{ shape: rect}
+    n1@{ shape: rect}
+    n2@{ shape: rect}
+    n3@{ shape: rect}
+    n5@{ shape: rect}
+
+    L_VPC_Module_n5_0@{ animation: fast }
 ```
 
 ### **TGW Module**
@@ -185,7 +192,7 @@ flowchart TB
     n4@{ shape: rect}
 
     L_TGW_Module_n5_0@{ animation: fast }
-```
+``
 
 ### **Dev Environment**
 ```mermaid
