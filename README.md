@@ -2,18 +2,16 @@
 
 A minimal, reusable Terraform module for creating an AWS VPC architecture with:
 
-- public and private IPv4 subnets (segmenting mgmt/internal/guest)
-- security groups for management, compute, internal, and guest
-- route tables + gateways (IGW)
-- Elastic IPs
-- optional per-AZ NAT gateways
-- outputs for all resources
-- Flow logs (S3)
-
-Coming soon:
-
-- TGW
-- VPC Attachments
+- public and private IPv4 subnets across 3 Availability Zones (mgmt/internal/guest)
+- Security Groups segmentation with ingress policies and default-deny
+- Route Tables + Internet Gateway
+- NAT Gateways + Elastic IPs
+- Optional per-AZ NAT gateways
+- S3 native state locking
+- Outputs for all resources
+- Flow Logs (S3)
+- Remote state integration across environments via S3 backend
+- Transit Gateway with per-VPC route tables, associations and propagations attachments for Cloud WAN
 
 ---
 
@@ -30,14 +28,17 @@ flowchart TB
     direction TB
     A[terraform-aws-vpc]
     A --> B[modules/vpc]
-    A --> C[environments/dev]
-    A --> D[environments/prod]
+    A --> C[modules/tgw]
+    A --> D[environments/dev]
+    A --> E[environments/prod]
+    A --> F[environments/shared-svc]
+    A --> G[environments/tgw]
   end
 
-subgraph VPC_Module ["VPC Module (modules/vpc)"]
+  subgraph VPC_Module ["VPC Module (modules/vpc)"]
     direction TB
     M1[VPC]
-    M2[Subnets]
+    M2[Subnets - mgmt/internal/guest x 3AZ]
     M3[Route Tables - public/private]
     M4[Security Groups - mgmt/internal/guest/compute]
     M5[NAT Gateways]
@@ -49,14 +50,26 @@ subgraph VPC_Module ["VPC Module (modules/vpc)"]
     M3 --> M5
     M1 -->|captures traffic| M6
     M6 -->|ships to| M7
-end
+  end
+
+  subgraph TGW_Module ["TGW Module (modules/tgw)"]
+    direction TB
+    T1[Transit Gateway]
+    T2[VPC Attachments]
+    T3[Route Tables]
+    T4[Associations]
+    T5[Propagations]
+    T1 --> T2
+    T1 --> T3
+    T3 --> T4
+    T3 --> T5
+  end
 
   subgraph Dev_Env ["Dev Environment"]
     direction TB
     E1[main.tf -> module.vpc]
     E2[terraform.tfvars - Local Vars]
     E3[terraform.tfstate - Local State]
-    E1 -->|uses| M1
     E1 --> E2
     E1 --> E3
   end
@@ -66,18 +79,50 @@ end
     P1[main.tf -> module.vpc]
     P2[terraform.tfvars - Prod Vars]
     P3[backend.tf - Backend Config]
-    P4[S3 State Bucket]
-    P5[DynamoDB Lock Table]
-    
-    P1 -->|uses| M1
+    P4[(S3 State Bucket)]
     P1 --> P2
     P1 --> P3
     P3 -->|manages| P4
-    P4 --> P5
-  end  
-  M4 -.->|exports| O[Subnet IDs / SG IDs / RT IDs]
-  E1 -.-> O
-  P1 -.-> O
+  end
+
+  subgraph SharedSvc_Env ["Shared-Svc Environment"]
+    direction TB
+    S1[main.tf -> module.vpc]
+    S2[terraform.tfvars]
+    S3[backend.tf - Backend Config]
+    S4[(S3 State Bucket)]
+    S1 --> S2
+    S1 --> S3
+    S3 -->|manages| S4
+  end
+
+  subgraph TGW_Env ["TGW Environment"]
+    direction TB
+    G1[main.tf -> module.tgw]
+    G2[terraform.tfvars]
+    G3[backend.tf - Backend Config]
+    G4[(S3 State Bucket)]
+    G1 --> G2
+    G1 --> G3
+    G3 -->|manages| G4
+  end
+
+  E1 -->|uses| M1
+  P1 -->|uses| M1
+  S1 -->|uses| M1
+  G1 -->|uses| T1
+
+  P1 <-->|remote state| G1
+  S1 <-->|remote state| G1
+  P1 <-->|remote state| S1
+
+  T2 -->|attaches| P1
+  T2 -->|attaches| S1
+
+  M3 -->|TGW route| T1
+
+  VPC_Module -.->|exports| O[vpc_id / subnet_ids / sg_ids / rt_ids / vpc_cidr]
+  TGW_Module -.->|exports| OT[tgw_id / attachment_ids / rt_ids]
 ```
 
 ### **VPC Module**
@@ -90,7 +135,7 @@ flowchart TB
  subgraph VPC_Module["VPC Module (modules/vpc)"]
     direction TB
         M1["VPC"]
-        M2["Subnets"]
+        M2["Subnets - mgmt/internal/guest x 3AZ"]
         M3["Route Tables - public/private"]
         M4["Security Groups - mgmt/internal/guest/compute"]
         M5["NAT Gateways"]
@@ -99,50 +144,61 @@ flowchart TB
   end
     M1 --> M2
     M2 --> M3 & M4
-    M3 --> M5
+    M3 --> M5 & n4["TGW Module"]
     M1 -- captures traffic --> M6
     M6 -- ships to --> M7
-    n1["Prod"] -- uses --> M1
-    n2["Dev"] -- uses --> M1
-    M4 L_M4_O_0@-- exports --> O["Subnet IDs / SG IDs / RT IDs"]
+    n1["Shared-svc Environment"] -- uses --> M1
+    n2["Prod Environment"] -- uses --> M1
+    n3["Dev Environment"] -- uses --> M1
+    VPC_Module L_VPC_Module_n5_0@-. exports .-> n5["vpc_id / subnet_ids / sg_ids / rt_ids / vpc_cidr"]
 
+    n4@{ shape: rect}
     n1@{ shape: rect}
     n2@{ shape: rect}
+    n3@{ shape: rect}
+    n5@{ shape: rect}
 
-    L_M4_O_0@{ animation: fast }
+    L_VPC_Module_n5_0@{ animation: fast }
 ```
 
-### **Prod Environment**
-```mermaid
+### **TGW Module**
+```
+mermaid
 ---
 config:
-  layout: fixed
+  layout: elk
 ---
 flowchart TB
- subgraph Prod_Env["Prod Environment"]
+ subgraph TGW_Module["TGW Module (modules/tgw)"]
     direction TB
-        P1["main.tf -> module.vpc"]
-        P2["terraform.tfvars - Prod Vars"]
-        P3["backend.tf - Backend Config"]
-        P4["S3 State Bucket"]
-        P5["DynamoDB Lock Table"]
+        T1["Transit Gateway"]
+        T2["VPC Attachments"]
+        T3["Route Tables"]
+        T4["Associations"]
+        T5["Propagations"]
   end
-    P1 --> P3 & P2
-    P4 --> P5
-    P1 L_P1_O_0@-.-> O["Subnet IDs / SG IDs / RT IDs"]
-    P1 -- uses --> n1["VPC Module"]
-    P3 -- manages --> P4
+    T1 --> T2 & T3
+    T3 --> T4 & T5
+    n2["TGW Environment"] --> T1
+    n3["VPC Module"] --> T1
+    TGW_Module L_TGW_Module_n5_0@-. exports .-> n5["tgw_id / attachment_ids / rt_ids"]
+    T2 --> n1["Prod Environment"]
+    T2 --> n4["Shared-svc Environment"]
 
+    n2@{ shape: rect}
+    n3@{ shape: rect}
+    n5@{ shape: rect}
     n1@{ shape: rect}
+    n4@{ shape: rect}
 
-    L_P1_O_0@{ animation: fast }
+    L_TGW_Module_n5_0@{ animation: fast }
 ```
 
 ### **Dev Environment**
 ```mermaid
 ---
 config:
-  layout: fixed
+  layout: elk
 ---
 flowchart TB
  subgraph Dev_Env["Dev Environment"]
@@ -151,14 +207,89 @@ flowchart TB
         E2["terraform.tfvars - Local Vars"]
         E3["terraform.tfstate - Local State"]
   end
-    E1 --> E2
-    E1 L_E1_n1_0@-. exports .-> n1["Subnet IDs / SG IDs / RT IDs"]
+    E1 --> E2 & E3
     E1 -- uses --> O["VPC Module"]
-    E1 --> E3
+```
+
+### **Prod Environment**
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+ subgraph Prod_Env["Prod Environment"]
+    direction TB
+        P1["main.tf -> module.vpc"]
+        P2["terraform.tfvars - Prod Vars"]
+        P3["backend.tf - Backend Config"]
+        P4[("S3 State Bucket")]
+  end
+    P1 --> P2 & P3
+    P3 -- manages --> P4
+    P1 -- uses --> n1["VPC Module"]
+    n2["TGW Module"] -- attaches --> P1
+    n3["TGW Environment"] <-- remote state --> P1
+    n4["Shared-svc Environment"] <-- remote state --> P1
 
     n1@{ shape: rect}
+    n2@{ shape: rect}
+    n3@{ shape: rect}
+    n4@{ shape: rect}
+```
 
-    L_E1_n1_0@{ animation: fast }
+### **Shared-svc Environment**
+```
+mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+ subgraph SharedSvc_Env["Shared-Svc Environment"]
+    direction TB
+        S1["main.tf -> module.vpc"]
+        S2["terraform.tfvars"]
+        S3["backend.tf - Backend Config"]
+        S4[("S3 State Bucket")]
+  end
+    S1 --> S2 & S3
+    S3 -- manages --> S4
+    n1["TGW Module"] -- attaches --> S1
+    n2["TGW Environment"] <-- remote state --> S1
+    n4["Prod Environment"] <-- remote state --> S1
+    S1 -- uses --> n3["VPC Module"]
+
+    n1@{ shape: rect}
+    n2@{ shape: rect}
+    n4@{ shape: rect}
+    n3@{ shape: rect}
+```
+
+### **TGW Environment**
+```
+mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+ subgraph TGW_Env["TGW Environment"]
+    direction TB
+        G1["main.tf -> module.tgw"]
+        G2["terraform.tfvars"]
+        G3["backend.tf - Backend Config"]
+        G4[("S3 State Bucket")]
+  end
+    G1 --> G2 & G3
+    G1 -- uses --> n1["TGW Module"]
+    G3 -- manages --> G4
+    n2["Shared-svc Environment"] <-- remote state --> G1
+    n3["Prod Environment"] <-- remote state --> G1
+
+    n1@{ shape: rect}
+    n2@{ shape: rect}
+    n3@{ shape: rect}
 ```
 
 ---
@@ -171,20 +302,36 @@ flowchart TB
 - **Run:** `cd environments/dev && terraform init && terraform apply`
 
 ### `environments/prod` 
-- **State:** Remote (AWS S3 + DynamoDB locking)
+- **State:** Remote (AWS S3 + native locking)
 - **Purpose:** High-availability deployment across 3 Availability Zones.
 - **Security:** Implements "Private by Default" architecture for Management and Internal tiers.
 
-To run in prod:
+### `environments/shared-svc`
+- **State:** Remote (AWS S3 + native locking)
+- **Purpose:** Shared services VPC connected to prod via Transit Gateway
+
+### `environments/tgw`
+- **State:** Remote (AWS S3 + native locking)
+- **Purpose:** Provisions the Transit Gateway, VPC attachments and route tables to connect prod and shared-svc
+
+To run in production:
 
 ```bash
-cd environments/prod
-terraform init
-terraform plan
-# terraform apply
+# Deploy prod VPC
+cd environments/prod && terraform apply
+
+# Deploy shared-svc VPC
+cd environments/shared-svc && terraform apply
+
+# Deploy Transit Gateway
+cd environments/tgw && terraform apply
+
+# Apply TGW routes back to VPCs
+cd environments/prod && terraform apply
+cd environments/shared-svc && terraform apply
 ```
 
-NAT Gateway is disabled by default to avoid AWS charges, set `enable_nat_gateway = true` in `main.tf`
+NAT Gateway & Flow Logs are disabled by default in prod & shared-svc environments to avoid AWS charges. Override `enable_nat_gateway = true` & `enable_flow_logs = true` in thier `main.tf` or modify their `variables.tf`.
 
 ---
 
@@ -197,10 +344,10 @@ module "vpc" {
   name_prefix = "tf_example"
   environment = "dev"
   vpc_cidr    = "10.0.0.0/16"
-
-  enable_nat_gateway = true          
-
-  management_ssh_cidrs = []   
+  management_ssh_cidrs = [] 
+  enable_nat_gateway = false
+  enable_flow_logs   = false      
+  flow_log_traffic_type = "ALL"
 
 
   subnet_config = {
@@ -234,11 +381,18 @@ module "vpc" {
 
 This module exposes useful outputs for downstream modules:
 
+### VPC Module
 - `vpc_id`
 - `subnet_ids`, `public_subnet_ids`, `private_subnet_ids`
 - `subnet_ids_by_key` (e.g., `mgmt`, `internal`, `guest`)
 - `public_route_table_id`
 - `private_route_table_ids` (one per private subnet)
 - `security_group_ids` (mgmt/compute/internal/guest)
-- `nat_gateway_ids` / `nat_eip_ids` (one per AZ, when enabled)
+- `nat_gateway_ids`, `nat_eip_ids` (one per AZ, when enabled)
 - `flow_log_bucket_arn`, `flow_log_id`
+- `mgmt_subnet_ids` (for TGW attachment)
+
+### TGW Module
+- `transit_gateway_id`, `transit_gateway_arn`
+- `attachment_ids` (keyed by attachment name)
+- `route_table_ids` (keyed by route table name)
