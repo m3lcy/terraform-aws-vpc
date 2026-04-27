@@ -132,3 +132,15 @@ resource "aws_vpc_security_group_egress_rule" "all_outbound" {
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
 }
+
+resource "aws_vpc_security_group_ingress_rule" "mgmt_from_trusted_cidrs" {
+  for_each = { for idx, cidr in var.trusted_cidrs : idx => cidr }
+
+  security_group_id = aws_security_group.management.id
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = each.value
+
+  tags = { Name = "mgmt-from-trusted-cidr-${each.key}" }
+}
