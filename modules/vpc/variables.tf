@@ -71,6 +71,6 @@ variable "tgw_routes" {
 
 variable "trusted_cidrs" {
   description = "List of trusted CIDRS allowed to SSH into mgmt SG for cross VPC access"
-  type = list(string)
-  default = []
+  type        = list(string)
+  default     = []
 }
