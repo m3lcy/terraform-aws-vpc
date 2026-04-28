@@ -59,11 +59,11 @@ resource "aws_iam_instance_profile" "ssm" {
 resource "aws_instance" "this" {
   for_each = var.instances
 
-  ami           = data.aws_ami.amazon_linux_2023.id
-  instance_type = each.value.instance_type
-  subnet_id = each.value.subnet_id
+  ami                    = data.aws_ami.amazon_linux_2023.id
+  instance_type          = each.value.instance_type
+  subnet_id              = each.value.subnet_id
   vpc_security_group_ids = each.value.security_group_ids
-  iam_instance_profile = aws_iam_instance_profile.ssm.name
+  iam_instance_profile   = aws_iam_instance_profile.ssm.name
 
   associate_public_ip_address = false
 
