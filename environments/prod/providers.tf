@@ -3,7 +3,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "Cloud-Enterprise-Network"
+      Project     = "Network-Infrastructure"
       Environment = var.environment
       ManagedBy   = "Terraform"
       Owner       = "m3lcy"
