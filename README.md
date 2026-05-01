@@ -258,12 +258,13 @@ flowchart TB
         P4[("S3 State Bucket")]
   end
     P1 --> P2 & P3
+    P1 -- uses --> n5["EC2 Module"] & n1["VPC Module"]
     P3 -- manages --> P4
-    P1 -- uses --> n1["VPC Module"]
     n2["TGW Module"] -- attaches --> P1
     n3["TGW Environment"] <-- remote state --> P1
     n4["Shared-svc Environment"] <-- remote state --> P1
 
+    n5@{ shape: rect}
     n1@{ shape: rect}
     n2@{ shape: rect}
     n3@{ shape: rect}
@@ -289,12 +290,13 @@ flowchart TB
     n1["TGW Module"] -- attaches --> S1
     n2["TGW Environment"] <-- remote state --> S1
     n4["Prod Environment"] <-- remote state --> S1
-    S1 -- uses --> n3["VPC Module"]
+    S1 -- uses --> n3["VPC Module"] & n5["EC2 Module"]
 
     n1@{ shape: rect}
     n2@{ shape: rect}
     n4@{ shape: rect}
     n3@{ shape: rect}
+    n5@{ shape: rect}
 ```
 
 ### **TGW Environment**
@@ -426,3 +428,9 @@ This module exposes useful outputs for downstream modules:
 - `transit_gateway_id`, `transit_gateway_arn`
 - `attachment_ids` (keyed by attachment name)
 - `route_table_ids` (keyed by route table name)
+
+### EC2 Module
+- `instance_ids` (keyed by instance name)
+- `instance_private_ips` (keyed by instance name)
+- `instance_availability_zones` (keyed by instance name)
+- `instance_profile_arn`
