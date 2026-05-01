@@ -26,3 +26,13 @@ output "mgmt_subnet_ids" {
     module.vpc.subnet_ids_by_key["mgmt-1c"],
   ]
 }
+
+output "ec2_instance_ids" {
+  description = "Shared-svc EC2 instance IDs"
+  value       = module.ec2_instance.instance_ids
+}
+
+output "ec2_instance_private_ips" {
+  description = "Shared-svc EC2 private IPs"
+  value       = module.ec2_instance.instance_private_ips
+}
