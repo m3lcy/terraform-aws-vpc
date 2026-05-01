@@ -44,3 +44,24 @@ module "vpc" {
 
   tgw_routes = length(var.tgw_routes) > 0 ? var.tgw_routes : local.remote_tgw_routes
 }
+
+module "ec2_instance" {
+  source = "../../modules/ec2"
+
+  environment = var.environment
+  name_prefix = var.name_prefix
+
+  instances = {
+    bastion = {
+      subnet_id          = module.vpc.subnet_ids_by_key["mgmt-1a"]
+      security_group_ids = [module.vpc.security_group_ids["management"]]
+      instance_type      = "t3.micro"
+    }
+
+    internal-test = {
+      subnet_id          = module.vpc.subnet_ids_by_key["internal-1a"]
+      security_group_ids = [module.vpc.security_group_ids["internal"]]
+      instance_type      = "t3.micro"
+    }
+  }
+}
