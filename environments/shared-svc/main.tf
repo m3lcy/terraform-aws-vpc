@@ -42,7 +42,7 @@ module "vpc" {
 
   tgw_routes = length(var.tgw_routes) > 0 ? var.tgw_routes : local.remote_tgw_routes
 
-  trusted_cidrs = [data.terraform_remote_state.prod.outputs.vpc_cidr ]
+  trusted_cidrs = [data.terraform_remote_state.prod.outputs.vpc_cidr]
 }
 
 module "ec2_instance" {
@@ -53,9 +53,9 @@ module "ec2_instance" {
 
   instances = {
     bastion = {
-      subnet_id         = module.vpc.subnet_ids_by_key["mgmt-1a"]
+      subnet_id          = module.vpc.subnet_ids_by_key["mgmt-1a"]
       security_group_ids = [module.vpc.security_group_ids["management"]]
-      instance_type     = "t3.micro"
+      instance_type      = "t3.micro"
     }
   }
 }
