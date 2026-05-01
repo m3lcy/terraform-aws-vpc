@@ -59,6 +59,8 @@ jobs:
       - name: Init tflint
         run: tflint --init --config ../../.tflint.hcl
         working-directory: modules/vpc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tflint
         run: tflint --format compact --config ../../.tflint.hcl
