@@ -1,6 +1,6 @@
 # Terraform AWS Virtual Private Cloud (VPC)
 
-A minimal, reusable Terraform module for creating an AWS VPC architecture with:
+A reusable Terraform module for deploying a multi-AZ AWS VPC architecture with:
 
 - public and private IPv4 subnets across 3 Availability Zones (mgmt/internal/guest)
 - Security Groups segmentation with ingress policies and default-deny
@@ -10,6 +10,7 @@ A minimal, reusable Terraform module for creating an AWS VPC architecture with:
 - S3 native state locking
 - Outputs for all resources
 - Flow Logs (S3)
+- EC2 instances with IAM instance profiles for SSM Session Manager access
 - Remote state integration across environments via S3 backend
 - Transit Gateway with per-VPC route tables, associations and propagations attachments for Cloud WAN
 
@@ -24,17 +25,6 @@ config:
   layout: elk
 ---
 flowchart TB
-  subgraph Repo ["Project Repository"]
-    direction TB
-    A[terraform-aws-vpc]
-    A --> B[modules/vpc]
-    A --> C[modules/tgw]
-    A --> D[environments/dev]
-    A --> E[environments/prod]
-    A --> F[environments/shared-svc]
-    A --> G[environments/tgw]
-  end
-
   subgraph VPC_Module ["VPC Module (modules/vpc)"]
     direction TB
     M1[VPC]
@@ -65,6 +55,17 @@ flowchart TB
     T3 --> T5
   end
 
+  subgraph EC2_Module ["EC2 Module (modules/ec2)"]
+    direction TB
+    C1[EC2 Instances]
+    C2[IAM Role]
+    C3[IAM Instance Profile]
+    C4[SSM Policy Attachment]
+    C2 --> C4
+    C2 --> C3
+    C3 --> C1
+  end
+
   subgraph Dev_Env ["Dev Environment"]
     direction TB
     E1[main.tf -> module.vpc]
@@ -76,7 +77,7 @@ flowchart TB
 
   subgraph Prod_Env ["Prod Environment"]
     direction TB
-    P1[main.tf -> module.vpc]
+    P1[main.tf -> module.vpc + module.ec2]
     P2[terraform.tfvars - Prod Vars]
     P3[backend.tf - Backend Config]
     P4[(S3 State Bucket)]
@@ -87,7 +88,7 @@ flowchart TB
 
   subgraph SharedSvc_Env ["Shared-Svc Environment"]
     direction TB
-    S1[main.tf -> module.vpc]
+    S1[main.tf -> module.vpc + module.ec2]
     S2[terraform.tfvars]
     S3[backend.tf - Backend Config]
     S4[(S3 State Bucket)]
@@ -109,7 +110,9 @@ flowchart TB
 
   E1 -->|uses| M1
   P1 -->|uses| M1
+  P1 -->|uses| C1
   S1 -->|uses| M1
+  S1 -->|uses| C1
   G1 -->|uses| T1
 
   P1 <-->|remote state| G1
@@ -120,9 +123,11 @@ flowchart TB
   T2 -->|attaches| S1
 
   M3 -->|TGW route| T1
+  C1 -->|SSM access| C2
 
   VPC_Module -.->|exports| O[vpc_id / subnet_ids / sg_ids / rt_ids / vpc_cidr]
   TGW_Module -.->|exports| OT[tgw_id / attachment_ids / rt_ids]
+  EC2_Module -.->|exports| OC[instance_ids / private_ips / instance_profile_arn]
 ```
 
 ### **VPC Module**
@@ -191,6 +196,34 @@ flowchart TB
     n4@{ shape: rect}
 
     L_TGW_Module_n5_0@{ animation: fast }
+```
+
+### EC2 Module
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+ subgraph EC2_Module["EC2 Module (modules/ec2)"]
+    direction TB
+        C1["EC2 Instances"]
+        C2["IAM Role"]
+        C3["IAM Instance Profile"]
+        C4["SSM Policy Attachment"]
+  end
+    C2 --> C4 & C3
+    C1 -- SSM Access --> C2
+    n1["Prod Environment"] -- uses --> C1
+    C1 --> C4
+    EC2_Module L_EC2_Module_n2_0@-- exports --> n2["instance_ids / private_ips / instance_profile_arn"]
+    n3["Shared-svc Environment"] -- uses --> C1
+
+    n1@{ shape: rect}
+    n2@{ shape: rect}
+    n3@{ shape: rect}
+
+    L_EC2_Module_n2_0@{ animation: fast }
 ```
 
 ### **Dev Environment**
